@@ -1,0 +1,34 @@
+
+{
+  "id": "jable",
+  "name": "Jable",
+  "version": "1.0.0",
+  "apiVersion": 4,
+  "entry": "plugin.js",
+  "description": "Videos JAV de jable.tv: listas, búsqueda, fila Sin censura y reproducción HLS con selector de calidad.",
+  "author": "Hotaru Yume",
+  "creator": "hotaruyume",
+  "hosts": ["jable.tv", "*.jable.tv", "fs1.app"],
+  "streamHosts": "any",
+  "capabilities": ["search", "home", "browse", "resolve"],
+  "settings": [
+    {
+      "key": "quality",
+      "label": "Calidad del video",
+      "type": "select",
+      "default": "best",
+      "options": [
+        { "value": "best", "label": "La mejor disponible" },
+        { "value": "auto", "label": "Automático (según conexión)" },
+        { "value": "1080", "label": "1080p" },
+        { "value": "720", "label": "720p" },
+        { "value": "480", "label": "480p" },
+        { "value": "worst", "label": "La más baja (ahorra datos)" }
+      ],
+      "hint": "Se aplica al reproducir; Auto deja elegir al reproductor"
+    }
+  ],
+  "categories": ["adult"],
+  "color": "#FF5C8D",
+  "icon": "icon.png"
+}
