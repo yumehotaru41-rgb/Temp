@@ -1,14 +1,26 @@
-
 {
-  "id": "jable",
-  "name": "Jable",
-  "version": "1.0.1",
+  "id": "hanime1",
+  "name": "Hanime1",
+  "version": "2.0.0",
   "apiVersion": 4,
   "entry": "plugin.js",
-  "description": "Videos JAV de jable.tv: listas, búsqueda, fila Sin censura y reproducción HLS con selector de calidad.",
+  "description": "Videos de hanime1.me: inicio con filas (incluye Sin censura), búsqueda paginada completa y reproducción con selector de calidad.",
   "author": "Hotaru Yume",
   "creator": "hotaruyume",
-  "hosts": ["jable.tv", "*.jable.tv", "fs1.app"],
+  "hosts": [
+    "hanime1.me",
+    "*.hanime1.me",
+    "hanime1.com",
+    "*.hanime1.com",
+    "hanimeone.me",
+    "*.hanimeone.me",
+    "javchu.com",
+    "*.javchu.com",
+    "vdownload.hembed.com",
+    "*.hembed.com",
+    "rsc.cdn77.org",
+    "*.rsc.cdn77.org"
+  ],
   "streamHosts": "any",
   "capabilities": ["search", "home", "browse", "resolve"],
   "settings": [
@@ -23,6 +35,7 @@
         { "value": "1080", "label": "1080p" },
         { "value": "720", "label": "720p" },
         { "value": "480", "label": "480p" },
+        { "value": "360", "label": "360p" },
         { "value": "worst", "label": "La más baja (ahorra datos)" }
       ],
       "hint": "Se aplica al reproducir; Auto deja elegir al reproductor"
