@@ -2,7 +2,7 @@
 {
   "id": "jable",
   "name": "Jable",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "apiVersion": 4,
   "entry": "plugin.js",
   "description": "Videos JAV de jable.tv: listas, búsqueda, fila Sin censura y reproducción HLS con selector de calidad.",

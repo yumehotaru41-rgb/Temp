@@ -33,12 +33,12 @@ function decodeEntities(s) {
 }
 function stripTags(s) { return decodeEntities(String(s).replace(/<[^>]*>/g, " ")); }
 function cleanText(s) {
-  return stripTags(s).replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim();
+  return stripTags(s).replace(/\s+/g, " ").trim();
 }
 function videoUrlOf(href) {
   if (!href) return null;
-  const m = /\/videos\/[^"?#]+\/?/.exec(href);
-  if (!m) return null;
+  const m = /\/videos\/[^"#?\/][^"#?]*\/?/.exec(href);
+  if (!m || !/\/videos\/[^"\/]/.test(href)) return null;
   return SITE + m[0];
 }
 // Ads on jable are ordinary uploads marked "[廣告]" (or "廣告") plus banner noise;
@@ -53,46 +53,43 @@ function absolute(base, url) {
 }
 
 // ---- Listing parsing (jable.tv runs Kernel Video Sharing) ---------------
-function parseCard(chunk) {
-  const hrefM = /href="([^"]*)"/.exec(chunk);
-  const url = videoUrlOf(hrefM ? hrefM[1] : "");
-  if (!url) return null;
-  const titleM = /<h6[^>]*>([\s\S]*?)<\/h6>/.exec(chunk);
-  let title = cleanText(titleM ? titleM[1] : "");
-  if (!title) {
-    const fallback = /<a[^>]*href="[^"]*\/videos\/[^"]*"[^>]*>([\s\S]{3,400}?)<\/a>/.exec(chunk);
-    title = cleanText(fallback ? fallback[1] : "");
-  }
-  if (!title || isAd(title)) return null;
-  const imgM = /(?:data-src|data-poster|src)="([^"]+\.(?:jpg|jpeg|webp|png)[^"]*)"/i.exec(chunk);
-  const poster = imgM ? absolute(SITE, stripTags(imgM[1])) : undefined;
-  const durM = /(\d{1,3}):(\d{2})(?::\d{2})?/.exec(chunk);
-  let runtimeMinutes;
-  if (durM) {
-    runtimeMinutes = parseInt(durM[1], 10) + Math.round(parseInt(durM[2], 10) / 60);
-    if (durM[0].split(":").length === 3) runtimeMinutes = parseInt(durM[1], 10) * 60 + parseInt(durM[2], 10) + Math.round(parseInt((durM[0].split(":"))[2], 10) / 60);
-  }
-  const slug = /\/videos\/([^"?#]+)\/?/.exec(url)[1];
-  return {
-    id: slug.replace(/\/$/, ""),
-    ref: url,
-    title: title.slice(0, 200),
-    kind: "movie",
-    adult: true,
-    poster,
-    runtimeMinutes,
-  };
-}
-
+// The card markup changes between themes and async blocks, so the parser does
+// not depend on wrapper classes: every listing is a set of anchors whose href
+// points to /videos/<slug>/, and exactly one per card (the title link inside
+// <h6>) carries visible text. The poster is the last lazyload image declared
+// before that anchor.
 function parseList(html) {
-  const chunks = html.split(/<div class="video-img-box/).slice(1);
-  const items = [];
+  const out = [];
   const seen = new Set();
-  for (const chunk of chunks) {
-    const item = parseCard(chunk.length > 8000 ? chunk.slice(0, 8000) : chunk);
-    if (item && !seen.has(item.id)) { seen.add(item.id); items.push(item); }
+  const re = /<a\s[^>]*href="([^"]*\/videos\/[^"]*)"[^>]*>([\s\S]{0,400}?)<\/a>/g;
+  let m = re.exec(html);
+  while (m) {
+    const anchorStart = m.index;
+    const url = videoUrlOf(m[1]);
+    const title = cleanText(m[2]);
+    const hasImage = /<(img|svg|div)\b/i.test(m[2]);
+    m = re.exec(html);
+    if (!url || seen.has(url)) continue;
+    // The cover anchor (wrapping the thumbnail) has no text: skip it but keep
+    // looking, the title anchor with the same href follows in the same card.
+    if (hasImage || !title || isAd(title)) continue;
+    seen.add(url);
+    const before = html.slice(Math.max(0, anchorStart - 6000), anchorStart);
+    let poster;
+    const imgRe = /(?:data-src|data-poster)="([^"]+\.(?:jpg|jpeg|webp|png)[^"]*)"/gi;
+    let im = imgRe.exec(before);
+    while (im) { poster = im[1]; im = imgRe.exec(before); }
+    const slug = /\/videos\/([^"#?]+)\/?/.exec(url)[1];
+    out.push({
+      id: slug.replace(/\/$/, ""),
+      ref: url,
+      title: title.slice(0, 200),
+      kind: "movie",
+      adult: true,
+      poster: poster ? absolute(SITE, stripTags(poster)) : undefined,
+    });
   }
-  return items;
+  return out;
 }
 
 // Next page: KVS "load more" links (?...block_id=list_videos_common_videos_list&from=N).
@@ -114,7 +111,7 @@ async function fetchPage(url) {
       const r = await kino.fetch(full, { headers: BASE_HEADERS, timeoutMs: 20000 });
       if (!r.ok) { log("fetch", full, "status", r.status); continue; }
       const text = r.text();
-      if (/just a moment|challenge-platform|cf-browser-verification/i.test(text) && base !== MIRRORS[MIRRORS.length - 1]) {
+      if (/just a moment|challenge-platform|attention required|cf-browser-verification|you have been blocked/i.test(text) && base !== MIRRORS[MIRRORS.length - 1]) {
         log("cloudflare challenge on", base);
         continue;
       }
